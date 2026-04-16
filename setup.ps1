@@ -52,9 +52,10 @@ function Refresh-Path {
 # Installiert ein Programm via winget, falls der Test-Befehl fehlschlaegt
 function Install-IfMissing {
     param(
-        [string]$TestCommand,   # z.B. "git --version"
-        [string]$WingetId,      # z.B. "Git.Git"
-        [string]$DisplayName    # z.B. "Git"
+        [string]$TestCommand,               # z.B. "git --version"
+        [string]$WingetId,                  # z.B. "Git.Git"
+        [string]$DisplayName,               # z.B. "Git"
+        [string]$Scope = ""                 # "machine" fuer systemweite Installation (alle Benutzer)
     )
     Write-Info "Pruefe $DisplayName..."
     $result = $null
@@ -66,7 +67,11 @@ function Install-IfMissing {
         Write-OK "$DisplayName ist bereits installiert: $($result | Select-Object -First 1)"
     } else {
         Write-Info "$DisplayName wird installiert (winget: $WingetId)..."
-        winget install --id $WingetId --silent --accept-package-agreements --accept-source-agreements
+        $wingetArgs = @("install", "--id", $WingetId, "--silent", "--accept-package-agreements", "--accept-source-agreements")
+        if ($Scope) {
+            $wingetArgs += @("--scope", $Scope)
+        }
+        winget @wingetArgs
         if ($LASTEXITCODE -ne 0) {
             Write-Err "$DisplayName konnte nicht installiert werden (winget Exit-Code: $LASTEXITCODE)."
             Write-Err "Bitte $DisplayName manuell installieren und das Skript erneut ausfuehren."
@@ -113,9 +118,9 @@ Write-Info "Aktualisiere winget-Quellen..."
 winget source update
 Write-OK "winget-Quellen aktualisiert."
 
-Install-IfMissing "git --version"      "Git.Git"                        "Git"
-Install-IfMissing "py -3.11 --version" "Python.Python.3.11"             "Python 3.11"
-Install-IfMissing "code --version"     "Microsoft.VisualStudioCode"     "Visual Studio Code"
+Install-IfMissing "git --version"      "Git.Git"                     "Git"
+Install-IfMissing "py -3.11 --version" "Python.Python.3.11"          "Python 3.11"
+Install-IfMissing "code --version"     "Microsoft.VisualStudioCode"  "Visual Studio Code"  -Scope "machine"
 
 # ------------------------------------------------------------------------------
 # Schritt 2: Repository klonen oder aktualisieren
