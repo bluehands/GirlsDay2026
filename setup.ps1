@@ -184,24 +184,10 @@ if ($LASTEXITCODE -ne 0) {
 Write-OK "Alle Pakete wurden installiert (openai==1.76.2 erzwungen)."
 
 # ------------------------------------------------------------------------------
-# Schritt 5: VS Code Erweiterungen installieren
+# Schritt 5: VS Code Einstellungen schreiben
 # ------------------------------------------------------------------------------
 Write-Host ""
-Write-Host "--- Schritt 5: VS Code Erweiterungen installieren ---" -ForegroundColor Cyan
-
-Write-Info "Installiere Python-Erweiterung..."
-code --install-extension ms-python.python --force
-Write-OK "Python-Erweiterung installiert."
-
-Write-Info "Installiere Jupyter-Erweiterung..."
-code --install-extension ms-toolsai.jupyter --force
-Write-OK "Jupyter-Erweiterung installiert."
-
-# ------------------------------------------------------------------------------
-# Schritt 6: VS Code Einstellungen schreiben
-# ------------------------------------------------------------------------------
-Write-Host ""
-Write-Host "--- Schritt 6: VS Code konfigurieren ---" -ForegroundColor Cyan
+Write-Host "--- Schritt 5: VS Code konfigurieren ---" -ForegroundColor Cyan
 
 $vscodeDir = "$repoPath\.vscode"
 if (-Not (Test-Path $vscodeDir)) {
@@ -215,11 +201,23 @@ $settings = @{
 Set-Content -Path "$vscodeDir\settings.json" -Value $settings -Encoding UTF8
 Write-OK "VS Code wurde konfiguriert (Python-Interpreter zeigt auf .venv)."
 
+# extensions.json: VS Code zeigt beim ersten Oeffnen ein Popup
+# "Empfohlene Erweiterungen installieren?" fuer den jeweiligen Benutzer.
+$extensions = @{
+    recommendations = @(
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+    )
+} | ConvertTo-Json -Depth 3
+
+Set-Content -Path "$vscodeDir\extensions.json" -Value $extensions -Encoding UTF8
+Write-OK "Erweiterungs-Empfehlungen geschrieben (.vscode\extensions.json)."
+
 # ------------------------------------------------------------------------------
-# Schritt 7: Umgebungsvariablen setzen
+# Schritt 6: Umgebungsvariablen setzen
 # ------------------------------------------------------------------------------
 Write-Host ""
-Write-Host "--- Schritt 7: API-Schluessel konfigurieren ---" -ForegroundColor Cyan
+Write-Host "--- Schritt 6: API-Schluessel konfigurieren ---" -ForegroundColor Cyan
 
 # OTEL_SDK_DISABLED immer setzen (deaktiviert CrewAI-Telemetrie)
 [Environment]::SetEnvironmentVariable("OTEL_SDK_DISABLED", "true", "User")
