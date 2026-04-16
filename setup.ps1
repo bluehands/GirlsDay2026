@@ -119,8 +119,8 @@ winget source update
 Write-OK "winget-Quellen aktualisiert."
 
 Install-IfMissing "git --version"      "Git.Git"                     "Git"
-Install-IfMissing "py -3.11 --version" "Python.Python.3.11"          "Python 3.11"
-Install-IfMissing "code --version"     "Microsoft.VisualStudioCode"  "Visual Studio Code"  -Scope "machine"
+Install-IfMissing "py -3.11 --version" "Python.Python.3.11"          "Python 3.11"          -Scope "machine"
+Install-IfMissing "code --version"     "Microsoft.VisualStudioCode"  "Visual Studio Code"   -Scope "machine"
 
 # ------------------------------------------------------------------------------
 # Schritt 2: Repository klonen oder aktualisieren
@@ -149,9 +149,24 @@ if (-Not (Test-Path $repoPath)) {
 Write-Host ""
 Write-Host "--- Schritt 3: Python-Umgebung einrichten ---" -ForegroundColor Cyan
 
+# System-Python suchen (installiert nach C:\Program Files durch --scope machine).
+# py -3.11 wuerde ggf. eine per-User-Installation nehmen, deren Pfad in pyvenv.cfg
+# landet und auf anderen Benutzerkonten nicht existiert.
+$pythonExe = "C:\Program Files\Python311\python.exe"
+if (-Not (Test-Path $pythonExe)) {
+    # Fallback: py launcher fragen
+    $pythonExe = (py -3.11 -c "import sys; print(sys.executable)" 2>&1).Trim()
+}
+if (-Not (Test-Path $pythonExe)) {
+    Write-Err "Python 3.11 nicht gefunden unter $pythonExe. Bitte Setup erneut ausfuehren."
+    Read-Host "Enter druecken zum Beenden"
+    exit 1
+}
+Write-OK "Verwende Python: $pythonExe"
+
 if (-Not (Test-Path $venvPath)) {
     Write-Info "Erstelle virtuelle Python-Umgebung..."
-    py -3.11 -m venv $venvPath
+    & $pythonExe -m venv $venvPath
     Write-OK "Virtuelle Umgebung erstellt."
 } else {
     Write-OK "Virtuelle Umgebung existiert bereits."
