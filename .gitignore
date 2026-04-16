@@ -1,0 +1,14 @@
+# API Keys - niemals committen!
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
