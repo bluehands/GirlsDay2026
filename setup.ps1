@@ -159,7 +159,8 @@ Write-Host ""
 Write-Host "--- Schritt 4: Python-Pakete installieren ---" -ForegroundColor Cyan
 Write-Info "Installiere Pakete aus requirements.txt (kann einige Minuten dauern)..."
 
-# Erst alle Pakete installieren (crewai zieht dabei openai>=1.83 mit)
+# Pakete installieren. openai ist bewusst nicht in requirements.txt, damit
+# crewai seinen bevorzugten openai-Stand installieren kann ohne Konflikt.
 & "$venvPath\Scripts\pip.exe" install -r "$repoPath\requirements.txt"
 
 if ($LASTEXITCODE -ne 0) {
@@ -168,10 +169,10 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# openai danach auf die getestete Version zuruecksetzen.
-# crewai 1.8.1 deklariert openai~=1.83.0 als Abhaengigkeit, aber openai>=1.83
-# bricht crewai wegen eines entfernten Typs (ChatCompletionMessageFunctionToolCall).
-# --force-reinstall --no-deps ueberschreibt die Version ohne andere Pakete anzufassen.
+# openai auf die getestete Version erzwingen.
+# crewai 1.8.1 zieht openai>=1.83 mit, aber diese Version bricht crewai
+# wegen eines entfernten Typs (ChatCompletionMessageFunctionToolCall).
+# --force-reinstall --no-deps ueberschreibt nur openai ohne andere Pakete anzufassen.
 Write-Info "Setze openai auf getestete Version zurueck (openai==1.76.2)..."
 & "$venvPath\Scripts\pip.exe" install openai==1.76.2 --force-reinstall --no-deps
 
