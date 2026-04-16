@@ -67,7 +67,10 @@ function Install-IfMissing {
         Write-Info "$DisplayName wird installiert (winget: $WingetId)..."
         winget install --id $WingetId --silent --accept-package-agreements --accept-source-agreements
         if ($LASTEXITCODE -ne 0) {
-            Write-Err "$DisplayName konnte nicht installiert werden. Bitte manuell installieren."
+            Write-Err "$DisplayName konnte nicht installiert werden (winget Exit-Code: $LASTEXITCODE)."
+            Write-Err "Bitte $DisplayName manuell installieren und das Skript erneut ausfuehren."
+            Read-Host "Enter druecken zum Beenden"
+            exit 1
         } else {
             Write-OK "$DisplayName wurde installiert."
             Refresh-Path
@@ -103,6 +106,11 @@ Write-Host ""
 # Schritt 1: Voraussetzungen installieren
 # ------------------------------------------------------------------------------
 Write-Host "--- Schritt 1: Programme installieren ---" -ForegroundColor Cyan
+
+# winget-Quellen aktualisieren (verhindert "Fehler beim Oeffnen der Quelle(n)")
+Write-Info "Aktualisiere winget-Quellen..."
+winget source update
+Write-OK "winget-Quellen aktualisiert."
 
 Install-IfMissing "git --version"      "Git.Git"                        "Git"
 Install-IfMissing "py -3.11 --version" "Python.Python.3.11"             "Python 3.11"
