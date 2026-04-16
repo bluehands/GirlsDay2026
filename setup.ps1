@@ -119,6 +119,17 @@ winget source update
 Write-OK "winget-Quellen aktualisiert."
 
 Install-IfMissing "git --version"      "Git.Git"                     "Git"
+
+# Python: falls eine per-User-Installation existiert, diese zuerst entfernen.
+# Der Python-Installer wechselt sonst in den "Modify"-Modus und scheitert beim
+# Wechsel zu einer Machine-weiten Installation (Fehler 0x80070643).
+$pythonUserPath = "$env:LOCALAPPDATA\Programs\Python\Python311\python.exe"
+if (Test-Path $pythonUserPath) {
+    Write-Info "Per-User Python 3.11 gefunden. Wird deinstalliert vor Machine-Installation..."
+    winget uninstall --id Python.Python.3.11 --silent --accept-source-agreements
+    Write-OK "Per-User Python 3.11 wurde deinstalliert."
+}
+
 Install-IfMissing "py -3.11 --version" "Python.Python.3.11"          "Python 3.11"          -Scope "machine"
 Install-IfMissing "code --version"     "Microsoft.VisualStudioCode"  "Visual Studio Code"   -Scope "machine"
 
