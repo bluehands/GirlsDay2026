@@ -13,10 +13,18 @@ Starte das Skript:
   python sample01_single_agent.py
 """
 
+from dotenv import load_dotenv
 from crewai import Agent, Task, Crew
+from display_helper import show
+
+load_dotenv()
+
+# ── Hier kannst du das Tier ändern ──────────────────────
+TIER = "Axolotl"  # z.B. "Drache", "Krake", "Axolotl"
+# ────────────────────────────────────────────────────────
 
 # ─────────────────────────────────────────────
-# Schritt 1: Einen Agenten erstellen
+# Schritt 1: Agent erstellen
 # ─────────────────────────────────────────────
 # Ein Agent hat:
 #   role       - seine Berufsbezeichnung / Rolle
@@ -26,13 +34,13 @@ from crewai import Agent, Task, Crew
 tier_experte = Agent(
     role="Tier-Experte und Naturforscher",
     goal="Erstelle faszinierende und lehrreiche Steckbriefe ueber Tiere.",
-    backstory=(
-        "Du bist ein begeisterter Naturforscher und Biologe mit 20 Jahren Erfahrung. "
-        "Du liebst es, Kindern und Jugendlichen die Tierwelt naeher zu bringen. "
-        "Deine Steckbriefe sind immer spannend, voller ueberraschender Fakten "
-        "und auch fuer Fantasietiere voller Kreativitaet."
-    ),
-    verbose=True,  # zeigt uns was der Agent denkt
+    backstory="""\
+        Du bist ein begeisterter Naturforscher und Biologe mit 20 Jahren Erfahrung.
+        Du liebst es, Kindern und Jugendlichen die Tierwelt naeher zu bringen.
+        Deine Steckbriefe sind immer spannend, voller ueberraschender Fakten
+        und auch fuer Fantasietiere voller Kreativitaet.
+    """,
+    verbose=False,
 )
 
 # ─────────────────────────────────────────────
@@ -43,28 +51,24 @@ tier_experte = Agent(
 #   expected_output - wie das Ergebnis aussehen soll
 #   agent           - welcher Agent die Aufgabe erledigt
 
-tier = input(
-    "Welches Tier soll beschrieben werden? (z.B. Axolotl, Drache, Krake): "
-).strip()
-if not tier:
-    tier = "Axolotl"
-
 aufgabe = Task(
-    description=(
-        f"Erstelle einen kreativen Steckbrief fuer: {tier}\n\n"
-        "Der Steckbrief soll enthalten:\n"
-        "- Name und Herkunft\n"
-        "- Aussehen (wie sieht es aus?)\n"
-        "- Besondere Faehigkeiten oder Superkraefte\n"
-        "- Ernaehrung (was frisst es?)\n"
-        "- Ein ueberraschendes Fakt das kaum jemand kennt\n\n"
-        "Schreibe spannend und fuer 12-14 jaehrige Schueler geeignet. "
-        "Falls es ein Fantasietier ist, erfinde kreative aber glaubwuerdige Details."
-    ),
-    expected_output=(
-        "Ein vollstaendiger, spannend geschriebener Tier-Steckbrief "
-        "mit allen genannten Punkten, formatiert mit Ueberschriften."
-    ),
+    description=f"""\
+        Erstelle einen kreativen Steckbrief fuer: {TIER}
+
+        Der Steckbrief soll enthalten:
+        - Name und Herkunft
+        - Aussehen (wie sieht es aus?)
+        - Besondere Faehigkeiten oder Superkraefte
+        - Ernaehrung (was frisst es?)
+        - Ein ueberraschendes Fakt das kaum jemand kennt
+
+        Schreibe spannend und fuer 12-14 jaehrige Schueler geeignet.
+        Falls es ein Fantasietier ist, erfinde kreative aber glaubwuerdige Details.
+    """,
+    expected_output="""\
+        Ein vollstaendiger, spannend geschriebener Tier-Steckbrief
+        mit allen genannten Punkten, formatiert mit Ueberschriften.
+    """,
     agent=tier_experte,
 )
 
@@ -76,14 +80,9 @@ aufgabe = Task(
 crew = Crew(
     agents=[tier_experte],
     tasks=[aufgabe],
-    verbose=True,
+    verbose=False,
 )
-
-print(f"\nDer Agent erstellt jetzt einen Steckbrief fuer: {tier}\n")
 
 ergebnis = crew.kickoff()
 
-print("\n" + "=" * 60)
-print("FERTIGER STECKBRIEF:")
-print("=" * 60)
-print(ergebnis)
+show(f"---\n## Steckbrief: {TIER}\n\n{ergebnis.raw}")

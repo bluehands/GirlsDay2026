@@ -63,17 +63,17 @@ def erstelle_agenten():
     # Agent 1: Fragen-Ersteller
     fragen_ersteller = Agent(
         role="Quiz-Fragen-Ersteller",
-        goal=(
-            "Erstelle {anzahl} interessante Multiple-Choice-Fragen "
-            "zum Thema '{thema}'. Jede Frage hat genau 4 Antwortoptionen (A, B, C, D) "
-            "und eine klar markierte richtige Antwort."
-        ),
-        backstory=(
-            "Du bist ein erfahrener Quizmaster und Lehrer. "
-            "Du erstellst Fragen, die lehrreich, fair und klar verstaendlich sind. "
-            "Deine Fragen sind weder zu leicht noch zu schwer - genau richtig "
-            "fuer einen allgemeinen Wissensquiz."
-        ),
+        goal="""\
+            Erstelle {anzahl} interessante Multiple-Choice-Fragen
+            zum Thema '{thema}'. Jede Frage hat genau 4 Antwortoptionen (A, B, C, D)
+            und eine klar markierte richtige Antwort.
+        """,
+        backstory="""\
+            Du bist ein erfahrener Quizmaster und Lehrer.
+            Du erstellst Fragen, die lehrreich, fair und klar verstaendlich sind.
+            Deine Fragen sind weder zu leicht noch zu schwer - genau richtig
+            fuer einen allgemeinen Wissensquiz.
+        """,
         verbose=True,
         allow_delegation=False,
     )
@@ -81,16 +81,16 @@ def erstelle_agenten():
     # Agent 2: Quiz-Master (stellt Fragen, wertet aus)
     quiz_master = Agent(
         role="Quiz-Master",
-        goal=(
-            "Fuehre das Quiz durch. Stelle dem Spieler die Fragen nacheinander, "
-            "nehme seine Antworten entgegen und pruefe ob sie richtig sind. "
-            "Zaehle die Punkte und gib am Ende eine Zusammenfassung."
-        ),
-        backstory=(
-            "Du bist ein freundlicher und motivierender Quiz-Master. "
-            "Du moderierst das Quiz professionell, gibst sofortiges Feedback "
-            "und hast immer ein aufmunterndes Wort fuer den Spieler."
-        ),
+        goal="""\
+            Fuehre das Quiz durch. Stelle dem Spieler die Fragen nacheinander,
+            nehme seine Antworten entgegen und pruefe ob sie richtig sind.
+            Zaehle die Punkte und gib am Ende eine Zusammenfassung.
+        """,
+        backstory="""\
+            Du bist ein freundlicher und motivierender Quiz-Master.
+            Du moderierst das Quiz professionell, gibst sofortiges Feedback
+            und hast immer ein aufmunterndes Wort fuer den Spieler.
+        """,
         verbose=True,
         allow_delegation=False,
         tools=[PlayerInputTool()],
@@ -99,15 +99,15 @@ def erstelle_agenten():
     # Agent 3: Erklaerer (erklaert richtige Antworten)
     erklaerer = Agent(
         role="Wissens-Erklaerer",
-        goal=(
-            "Erklaere nach dem Quiz jede Frage kurz und verstaendlich. "
-            "Erklaere warum die richtige Antwort korrekt ist und was man daraus lernen kann."
-        ),
-        backstory=(
-            "Du bist ein begeisterter Wissensvermittler und Lehrer. "
-            "Du erklaerst komplizierte Dinge auf einfache, einpraegsame Weise. "
-            "Deine Erklaerungen sind kurz (2-3 Saetze), praezise und interessant."
-        ),
+        goal="""\
+            Erklaere nach dem Quiz jede Frage kurz und verstaendlich.
+            Erklaere warum die richtige Antwort korrekt ist und was man daraus lernen kann.
+        """,
+        backstory="""\
+            Du bist ein begeisterter Wissensvermittler und Lehrer.
+            Du erklaerst komplizierte Dinge auf einfache, einpraegsame Weise.
+            Deine Erklaerungen sind kurz (2-3 Saetze), praezise und interessant.
+        """,
         verbose=True,
         allow_delegation=False,
     )
@@ -127,64 +127,70 @@ def erstelle_aufgaben(agenten, thema: str, anzahl: int):
 
     # Task 1: Fragen generieren
     aufgabe_fragen = Task(
-        description=(
-            f"Erstelle genau {anzahl} Multiple-Choice-Fragen zum Thema '{thema}'.\n\n"
-            "Format fuer jede Frage (genau so einhalten):\n"
-            "FRAGE 1: [Fragetext]\n"
-            "A) [Option A]\n"
-            "B) [Option B]\n"
-            "C) [Option C]\n"
-            "D) [Option D]\n"
-            "RICHTIG: [Buchstabe]\n\n"
-            "Stelle sicher dass die Fragen verschiedene Schwierigkeitsgrade haben."
-        ),
-        expected_output=(
-            f"Eine Liste von {anzahl} gut formatierten Multiple-Choice-Fragen "
-            f"zum Thema '{thema}', jede mit 4 Optionen und der markierten richtigen Antwort."
-        ),
+        description=f"""\
+            Erstelle genau {anzahl} Multiple-Choice-Fragen zum Thema '{thema}'.
+
+            Format fuer jede Frage (genau so einhalten):
+            FRAGE 1: [Fragetext]
+            A) [Option A]
+            B) [Option B]
+            C) [Option C]
+            D) [Option D]
+            RICHTIG: [Buchstabe]
+
+            Stelle sicher dass die Fragen verschiedene Schwierigkeitsgrade haben.
+        """,
+        expected_output=f"""\
+            Eine Liste von {anzahl} gut formatierten Multiple-Choice-Fragen
+            zum Thema '{thema}', jede mit 4 Optionen und der markierten richtigen Antwort.
+        """,
         agent=fragen_ersteller,
     )
 
     # Task 2: Quiz durchfuehren
     aufgabe_quiz = Task(
-        description=(
-            "Du hast eine Liste von Quiz-Fragen erhalten. "
-            "Fuhre jetzt das Quiz mit dem Spieler durch:\n\n"
-            "1. Begrueesse den Spieler freundlich\n"
-            "2. Stelle jede Frage einzeln mit dem 'player_input' Tool\n"
-            "3. Pruefe ob die Antwort korrekt ist (Grossschreibung ignorieren)\n"
-            "4. Gib sofort Feedback: 'Richtig!' oder 'Leider falsch!'\n"
-            "5. Zaehle die Punkte mit\n"
-            "6. Am Ende: zeige Gesamtpunktzahl und ein motivierendes Schlusswort\n\n"
-            "Wichtig: Verwende das Tool 'player_input' fuer jede Frage!\n"
-            "Uebergib am Ende alle Fragen mit den Spielerantworten und ob sie richtig waren."
-        ),
-        expected_output=(
-            "Eine vollstaendige Liste aller Fragen mit:\n"
-            "- Der Frage selbst\n"
-            "- Der Antwort des Spielers\n"
-            "- Ob die Antwort richtig oder falsch war\n"
-            "- Der korrekten Antwort\n"
-            "- Die Gesamtpunktzahl"
-        ),
+        description="""\
+            Du hast eine Liste von Quiz-Fragen erhalten.
+            Fuhre jetzt das Quiz mit dem Spieler durch:
+
+            1. Begrueesse den Spieler freundlich
+            2. Stelle jede Frage einzeln mit dem 'player_input' Tool
+            3. Pruefe ob die Antwort korrekt ist (Grossschreibung ignorieren)
+            4. Gib sofort Feedback: 'Richtig!' oder 'Leider falsch!'
+            5. Zaehle die Punkte mit
+            6. Am Ende: zeige Gesamtpunktzahl und ein motivierendes Schlusswort
+
+            Wichtig: Verwende das Tool 'player_input' fuer jede Frage!
+            Uebergib am Ende alle Fragen mit den Spielerantworten und ob sie richtig waren.
+        """,
+        expected_output="""\
+            Eine vollstaendige Liste aller Fragen mit:
+            - Der Frage selbst
+            - Der Antwort des Spielers
+            - Ob die Antwort richtig oder falsch war
+            - Der korrekten Antwort
+            - Die Gesamtpunktzahl
+        """,
         agent=quiz_master,
         context=[aufgabe_fragen],  # benoetigt die Fragen aus Task 1
     )
 
     # Task 3: Erklaerungen geben
     aufgabe_erklaerung = Task(
-        description=(
-            "Das Quiz ist abgeschlossen. Jetzt ist deine Aufgabe:\n\n"
-            "Schreibe fuer JEDE Frage eine kurze, lehrreiche Erklaerung (2-3 Saetze):\n"
-            "- Warum ist die richtige Antwort korrekt?\n"
-            "- Was ist der interessante Hintergrund?\n"
-            "- Was kann man daraus lernen?\n\n"
-            "Formatiere die Erklaerungen uebersichtlich mit der Fragennummer."
-        ),
-        expected_output=(
-            "Eine lehrreiche Zusammenfassung aller Quiz-Fragen mit "
-            "kurzen, verstaendlichen Erklaerungen zur richtigen Antwort."
-        ),
+        description="""\
+            Das Quiz ist abgeschlossen. Jetzt ist deine Aufgabe:
+
+            Schreibe fuer JEDE Frage eine kurze, lehrreiche Erklaerung (2-3 Saetze):
+            - Warum ist die richtige Antwort korrekt?
+            - Was ist der interessante Hintergrund?
+            - Was kann man daraus lernen?
+
+            Formatiere die Erklaerungen uebersichtlich mit der Fragennummer.
+        """,
+        expected_output="""\
+            Eine lehrreiche Zusammenfassung aller Quiz-Fragen mit
+            kurzen, verstaendlichen Erklaerungen zur richtigen Antwort.
+        """,
         agent=erklaerer,
         context=[aufgabe_fragen, aufgabe_quiz],  # benoetigt Fragen + Spielergebnisse
     )
