@@ -1,3 +1,4 @@
+#Requires -Version 7.0
 # ==============================================================================
 # GirlsDay 2026 – Setup-Skript
 # ==============================================================================
@@ -158,6 +159,7 @@ Write-Host ""
 Write-Host "--- Schritt 4: Python-Pakete installieren ---" -ForegroundColor Cyan
 Write-Info "Installiere Pakete aus requirements.txt (kann einige Minuten dauern)..."
 
+# Erst alle Pakete installieren (crewai zieht dabei openai>=1.83 mit)
 & "$venvPath\Scripts\pip.exe" install -r "$repoPath\requirements.txt"
 
 if ($LASTEXITCODE -ne 0) {
@@ -165,7 +167,20 @@ if ($LASTEXITCODE -ne 0) {
     Read-Host "Enter druecken zum Beenden"
     exit 1
 }
-Write-OK "Alle Pakete wurden installiert."
+
+# openai danach auf die getestete Version zuruecksetzen.
+# crewai 1.8.1 deklariert openai~=1.83.0 als Abhaengigkeit, aber openai>=1.83
+# bricht crewai wegen eines entfernten Typs (ChatCompletionMessageFunctionToolCall).
+# --force-reinstall --no-deps ueberschreibt die Version ohne andere Pakete anzufassen.
+Write-Info "Setze openai auf getestete Version zurueck (openai==1.76.2)..."
+& "$venvPath\Scripts\pip.exe" install openai==1.76.2 --force-reinstall --no-deps
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Err "openai-Downgrade fehlgeschlagen. Bitte Fehlermeldung oben pruefen."
+    Read-Host "Enter druecken zum Beenden"
+    exit 1
+}
+Write-OK "Alle Pakete wurden installiert (openai==1.76.2 erzwungen)."
 
 # ------------------------------------------------------------------------------
 # Schritt 5: VS Code Erweiterungen installieren
