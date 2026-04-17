@@ -120,12 +120,14 @@ Write-OK "winget-Quellen aktualisiert."
 
 Install-IfMissing "git --version"      "Git.Git"                     "Git"
 
-# Python: falls eine per-User-Installation existiert, diese zuerst entfernen.
-# Der Python-Installer wechselt sonst in den "Modify"-Modus und scheitert beim
-# Wechsel zu einer Machine-weiten Installation (Fehler 0x80070643).
+# Python: falls eine per-User-Installation des aktuellen (Admin-)Benutzers
+# existiert, diese zuerst entfernen. Der Python-Installer wechselt sonst in
+# den "Modify"-Modus und scheitert beim Wechsel zur Machine-Installation (0x80070643).
+# Hinweis: $env:LOCALAPPDATA zeigt auf das Profil des aktuell eingeloggten
+# (Admin-)Benutzers – das ist korrekt, denn genau diese Installation stoert.
 $pythonUserPath = "$env:LOCALAPPDATA\Programs\Python\Python311\python.exe"
 if (Test-Path $pythonUserPath) {
-    Write-Info "Per-User Python 3.11 gefunden. Wird deinstalliert vor Machine-Installation..."
+    Write-Info "Per-User Python 3.11 gefunden unter aktuellem Benutzerprofil. Wird deinstalliert..."
     winget uninstall --id Python.Python.3.11 --silent --accept-source-agreements
     Write-OK "Per-User Python 3.11 wurde deinstalliert."
 }
@@ -153,6 +155,13 @@ if (-Not (Test-Path $repoPath)) {
     git -C $repoPath pull
     Write-OK "Repository ist aktuell."
 }
+
+# Sicherstellen dass alle lokalen Benutzer (Schuelerinnen) den Ordner lesen
+# und ausfuehren koennen. Das Skript laeuft als Admin, der Ordner gehoert dem
+# Admin – ohne explizite Rechte koennte der Student-Account keinen Zugriff haben.
+Write-Info "Setze Zugriffsrechte auf $repoPath fuer alle Benutzer..."
+icacls $repoPath /grant "Users:(OI)(CI)RX" /T /Q
+Write-OK "Zugriffsrechte gesetzt (Benutzer: Lesen + Ausfuehren)."
 
 # ------------------------------------------------------------------------------
 # Schritt 3: Python Virtual Environment erstellen
@@ -245,15 +254,45 @@ Set-Content -Path "$vscodeDir\extensions.json" -Value $extensions -Encoding UTF8
 Write-OK "Erweiterungs-Empfehlungen geschrieben (.vscode\extensions.json)."
 
 # ------------------------------------------------------------------------------
-# Schritt 6: Umgebungsvariablen setzen
+# Schritt 6: API-Schluessel konfigurieren (.env Datei)
 # ------------------------------------------------------------------------------
 Write-Host ""
 Write-Host "--- Schritt 6: API-Schluessel konfigurieren ---" -ForegroundColor Cyan
 
+# API-Schluessel werden in C:\GirlsDay2026\.env geschrieben.
+# Diese Datei gilt fuer alle Benutzer auf diesem Computer, da das Verzeichnis
+# C:\GirlsDay2026 fuer alle Benutzer lesbar ist (siehe Schritt 2).
+# Die .env Datei ist in .gitignore eingetragen und wird nicht ins Repo gepusht.
+
+$envFile = "$repoPath\.env"
+
+# Liest einen Wert aus der .env Datei
+function Get-EnvValue([string]$key) {
+    if (Test-Path $envFile) {
+        $line = Get-Content $envFile | Where-Object { $_ -match "^$key=" } | Select-Object -First 1
+        if ($line) { return $line.Substring($key.Length + 1) }
+    }
+    return $null
+}
+
+# Schreibt oder aktualisiert einen Schluessel in der .env Datei
+function Set-EnvValue([string]$key, [string]$value) {
+    if (Test-Path $envFile) {
+        $lines = Get-Content $envFile
+        if ($lines -match "^$key=") {
+            $lines = $lines -replace "^$key=.*", "$key=$value"
+        } else {
+            $lines += "$key=$value"
+        }
+        Set-Content $envFile $lines -Encoding UTF8
+    } else {
+        Add-Content $envFile "$key=$value" -Encoding UTF8
+    }
+}
+
 # OTEL_SDK_DISABLED immer setzen (deaktiviert CrewAI-Telemetrie)
-[Environment]::SetEnvironmentVariable("OTEL_SDK_DISABLED", "true", "User")
-$env:OTEL_SDK_DISABLED = "true"
-Write-OK "OTEL_SDK_DISABLED=true gesetzt (CrewAI-Telemetrie deaktiviert)."
+Set-EnvValue "OTEL_SDK_DISABLED" "true"
+Write-OK "OTEL_SDK_DISABLED=true in .env gesetzt."
 
 # Hilfsfunktion: Fragt nach einem API-Schluessel
 function Set-ApiKey {
@@ -263,7 +302,7 @@ function Set-ApiKey {
         [bool]$Optional = $false
     )
 
-    $existing = [Environment]::GetEnvironmentVariable($KeyName, "User")
+    $existing = Get-EnvValue $KeyName
 
     Write-Host ""
     if ($existing) {
@@ -282,16 +321,15 @@ function Set-ApiKey {
     $plain  = ConvertFrom-SecureStringPlain $secure
 
     if ($plain.Length -gt 0) {
-        [Environment]::SetEnvironmentVariable($KeyName, $plain, "User")
-        Set-Item -Path "env:$KeyName" -Value $plain
-        Write-OK "$KeyName wurde gesetzt."
+        Set-EnvValue $KeyName $plain
+        Write-OK "$KeyName wurde in .env gesetzt."
     } elseif ($existing) {
         Write-OK "$KeyName bleibt unveraendert."
     } else {
         if ($Optional) {
-            Write-Info "$KeyName wurde nicht gesetzt (optional, kann spaeter nachgetragen werden)."
+            Write-Info "$KeyName wurde nicht gesetzt (optional, kann spaeter in $envFile nachgetragen werden)."
         } else {
-            Write-Err "$KeyName wurde nicht gesetzt! Das Projekt wird ohne diesen Schluessel nicht funktionieren."
+            Write-Err "$KeyName wurde nicht gesetzt! Bitte spaeter manuell in $envFile eintragen."
         }
     }
 }
