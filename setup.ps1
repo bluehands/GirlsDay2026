@@ -281,10 +281,10 @@ function Set-EnvValue([string]$key, [string]$value) {
         $lines = Get-Content $envFile
         if ($lines -match "^$key=") {
             $lines = $lines -replace "^$key=.*", "$key=$value"
+            Set-Content $envFile $lines -Encoding UTF8
         } else {
-            $lines += "$key=$value"
+            Add-Content $envFile "`n$key=$value" -Encoding UTF8
         }
-        Set-Content $envFile $lines -Encoding UTF8
     } else {
         Add-Content $envFile "$key=$value" -Encoding UTF8
     }
