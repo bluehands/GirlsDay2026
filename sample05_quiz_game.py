@@ -74,7 +74,7 @@ def erstelle_agenten():
             Deine Fragen sind weder zu leicht noch zu schwer - genau richtig
             fuer einen allgemeinen Wissensquiz.
         """,
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
     )
 
@@ -91,7 +91,7 @@ def erstelle_agenten():
             Du moderierst das Quiz professionell, gibst sofortiges Feedback
             und hast immer ein aufmunterndes Wort fuer den Spieler.
         """,
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
         tools=[PlayerInputTool()],
     )
@@ -108,7 +108,7 @@ def erstelle_agenten():
             Du erklaerst komplizierte Dinge auf einfache, einpraegsame Weise.
             Deine Erklaerungen sind kurz (2-3 Saetze), praezise und interessant.
         """,
-        verbose=True,
+        verbose=False,
         allow_delegation=False,
     )
 
@@ -241,7 +241,7 @@ def main():
         agents=list(agenten),
         tasks=aufgaben,
         process=Process.sequential,  # erst Fragen erstellen, dann Quiz, dann erklaeren
-        verbose=True,
+        verbose=False,
     )
 
     # Quiz starten!
