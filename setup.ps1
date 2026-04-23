@@ -7,19 +7,52 @@
 #   irm https://raw.githubusercontent.com/bluehands/GirlsDay2026/main/setup.ps1 | iex
 # ==============================================================================
 
+param([switch]$elevated)
+
 # ------------------------------------------------------------------------------
 # Schritt 0: Als Administrator neu starten, falls noetig
 # ------------------------------------------------------------------------------
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")) {
-    Write-Host "Administrator-Rechte benoetigt. Starte neu als Administrator..."
-    if ($PSCommandPath) {
-        Start-Process powershell "-ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
-    } else {
-        # Wurde per "irm ... | iex" gestartet – Skript in temp-Datei speichern und neu starten
-        $tempScript = "$env:TEMP\girlsday_setup.ps1"
-        $MyInvocation.MyCommand.ScriptBlock | Out-File -FilePath $tempScript -Encoding UTF8
-        Start-Process powershell "-ExecutionPolicy Bypass -File `"$tempScript`"" -Verb RunAs
+
+    # Wurde bereits mit -elevated gestartet aber ist trotzdem kein Admin?
+    # Dann ist der RunAs-User kein Administrator – Endlosschleife verhindern.
+    if ($elevated) {
+        Write-Host ""
+        Write-Host "  [!!] Das Konto hat keine Administrator-Rechte." -ForegroundColor Red
+        Write-Host "  Bitte einen Administrator bitten, das Skript auszufuehren." -ForegroundColor Yellow
+        Write-Host ""
+        pause
+        exit 1
     }
+
+    Write-Host "Administrator-Rechte benoetigt. Starte neu als Administrator..."
+
+    $tempScript = "$env:TEMP\girlsday_setup.ps1"
+
+    if ($PSCommandPath) {
+        # Direkt als .ps1 gestartet – Datei wiederverwenden
+        Copy-Item $PSCommandPath $tempScript -Force
+    } else {
+        # Per "irm ... | iex" gestartet – Skript frisch herunterladen
+        $url = "https://raw.githubusercontent.com/bluehands/GirlsDay2026/main/setup.ps1"
+        try {
+            Invoke-RestMethod $url -OutFile $tempScript
+        } catch {
+            Write-Host "  [!!] Skript konnte nicht heruntergeladen werden: $_" -ForegroundColor Red
+            Write-Host "  Bitte setup.ps1 manuell als Administrator ausfuehren." -ForegroundColor Yellow
+            pause
+            exit 1
+        }
+    }
+
+    # Pruefen ob die Temp-Datei gueltig ist (mindestens 100 Bytes)
+    if ((Get-Item $tempScript).Length -lt 100) {
+        Write-Host "  [!!] Skript-Datei ist ungueltig oder leer." -ForegroundColor Red
+        pause
+        exit 1
+    }
+
+    Start-Process powershell "-ExecutionPolicy Bypass -File `"$tempScript`" -elevated" -Verb RunAs
     exit
 }
 
